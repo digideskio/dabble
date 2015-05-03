@@ -1,0 +1,13 @@
+{
+  "name"   : "danbooru",
+  "version": "0.0.0",
+  "origin" : "danbooru.donmai.us",
+  "flags"  : [
+    ["--username", "-u", "string"],
+    ["--password", "-p", "string"]
+  ],
+  "entry"  : "danbooru.ls",
+  "deps"   : {
+    "request": "^2.55.0"
+  }
+}
