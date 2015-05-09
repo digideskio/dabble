@@ -2,11 +2,11 @@ fs   = require "fs"
 path = require "path"
 npm  = require "npm"
 
-exports = module.exports = (plugin-manifest, force-overwrite, callback) ->
+exports = module.exports = (plugin-manifest, plugin-modules, force-overwrite, callback) ->
   if not plugin-manifest.deps?
     return process.next-tick callback
 
-  plugin-deps  = path.join __dirname, "plugin_modules", "#{plugin-manifest.name}-#{plugin-manifest.version}"
+  plugin-deps  = path.join plugin_modules, "#{plugin-manifest.name}-#{plugin-manifest.version}"
   dependencies = []
 
   Object.keys(plugin-manifest.deps).map (key) ->
