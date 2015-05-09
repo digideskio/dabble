@@ -33,9 +33,11 @@ class PluginHost
   load: (@module-dir) ->
     @sane!
     require @entry @this
+  modules: ->
+    path.resolve @module-dir, "#{@name}-#{@version}"
   require: (...) ->
     @sane!
-    module.paths.unshift @module-dir
+    module.paths.unshift @modules
     delayed = resp = void
     try
       resp = require.apply this, arguments
