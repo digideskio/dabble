@@ -68,8 +68,8 @@ class PluginHost
     @sane!
     out = require.resolve @global.output, destination
     fs.exists-sync out
-  install: (@module-dir, force, callback) ->
+  install: (@module-dir, options, callback) ->
     @sane!
-    deps @manifest, @module-dir, force, callback
+    deps @manifest, @module-dir, options, callback
 
 exports = module.exports = PluginHost
