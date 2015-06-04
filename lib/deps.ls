@@ -15,9 +15,8 @@ exports = module.exports = (plugin-manifest, plugin-modules, force-overwrite, ca
       # module@version-tag
       dependencies.push "#{key}@#{plugin-manifest.deps[key]}"
 
-  npm.load (err, npm) ->
+  npm.load do
+    loglevel: \warn
+  , (err, npm) ->
     if dependencies.length > 0
-      # npm.commands.install writes to stdout, idk why but whatever.
-      # npm has a shitty api.
-      # TODO figure out a way to block stdout
       npm.commands.install plugin-deps, dependencies, callback
