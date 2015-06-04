@@ -4,6 +4,7 @@ mkdirp = require \mkdirp
 deps   = require "./deps"
 
 class PluginHost
+  VERSION: @VERSION = \1
   (folder, @global) ->
     try
       @VERSION = PluginHost.VERSION
@@ -37,7 +38,7 @@ class PluginHost
     path.resolve @module-dir, "#{@name}-#{@version}"
   require: (...) ->
     @sane!
-    module.paths.unshift @modules
+    module.paths.unshift @modules!
     delayed = resp = void
     try
       resp = require.apply this, arguments
@@ -62,7 +63,7 @@ class PluginHost
   exists: (destination, callback) ->
     @sane!
     out = require.resolve @global.output, destination
-    fs.exists out
+    fs.exists out, callback
   exists-sync: (destination) ->
     @sane!
     out = require.resolve @global.output, destination
@@ -70,7 +71,5 @@ class PluginHost
   install: (@module-dir, force, callback) ->
     @sane!
     deps @manifest, @module-dir, force, callback
-
-PluginHost.VERSION = \1
 
 exports = module.exports = PluginHost

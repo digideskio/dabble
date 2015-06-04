@@ -2,11 +2,13 @@ fs   = require "fs"
 path = require "path"
 npm  = require "npm"
 
+const NULLSTREAM = fs.create-write-stream "/dev/null"
+
 exports = module.exports = (plugin-manifest, plugin-modules, force-overwrite, callback) ->
   if not plugin-manifest.deps?
     return process.next-tick callback
 
-  plugin-deps  = path.join plugin_modules, "#{plugin-manifest.name}-#{plugin-manifest.version}"
+  plugin-deps  = path.join plugin-modules, "#{plugin-manifest.name}-#{plugin-manifest.version}"
   dependencies = []
 
   Object.keys(plugin-manifest.deps).map (key) ->
@@ -16,7 +18,8 @@ exports = module.exports = (plugin-manifest, plugin-modules, force-overwrite, ca
       dependencies.push "#{key}@#{plugin-manifest.deps[key]}"
 
   npm.load do
-    loglevel: \warn
-  , (err, npm) ->
-    if dependencies.length > 0
-      npm.commands.install plugin-deps, dependencies, callback
+    loglevel: "silent"
+    logstream: NULLSTREAM
+    , (err, npm) ->
+      if dependencies.length > 0
+        npm.commands.install plugin-deps, dependencies, callback
