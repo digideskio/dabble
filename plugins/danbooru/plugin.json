@@ -1,8 +1,9 @@
 {
-  "name"   : "danbooru",
-  "version": "0.0.0",
-  "origin" : "danbooru.donmai.us",
-  "flags"  : [
+  "name":        "danbooru",
+  "description": "danbooru downloader",
+  "version":     "0.0.0",
+  "origin":      "danbooru.donmai.us",
+  "flags":       [
     ["--username", "-u", "string"],
     ["--password", "-p", "string"]
   ],

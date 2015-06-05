@@ -1,13 +1,14 @@
 {
-  "name"   : "pixiv",
-  "version": "0.0.0",
-  "origin" : "/(www\.)?pixiv\.net/",
-  "flags"  : [
+  "name":        "pixiv",
+  "description": "pixiv.com downloader",
+  "version":     "0.0.0",
+  "origin":      "/(www\\.)?pixiv\\.net/",
+  "flags":       [
     ["--username", "-u", "string"],
     ["--password", "-p", "string"]
   ],
-  "entry"  : "pixiv.ls",
-  "deps"   : {
+  "entry": "pixiv.ls",
+  "deps":  {
     "request": "^2.55.0"
   }
 }

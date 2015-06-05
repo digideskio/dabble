@@ -2,18 +2,20 @@ fs     = require \fs
 path   = require \path
 mkdirp = require \mkdirp
 deps   = require "./deps"
+engine = require "./dabble"
 
 class PluginHost
   VERSION: @VERSION = \1
-  (folder, @global) ->
+  (folder, @engine) ->
     try
       @VERSION = PluginHost.VERSION
 
       @manifest = require path.resolve folder, "plugin.json"
 
-      @name    = @manifest.name
-      @version = @manifest.version
-      @origin  = @manifest.origin
+      @name        = @manifest.name
+      @description = @manifest.description
+      @version     = @manifest.version
+      @origin      = @manifest.origin
       throw new Error "Missing required keys in #{require path.resolve folder, "plugin.json"}" unless @name? and @version? and @origin?
 
       if @origin[0] == "/" and @origin.substr(-1) == "/"
@@ -39,34 +41,36 @@ class PluginHost
   require: (...) ->
     @sane!
     module.paths.unshift @modules!
-    delayed = resp = void
+    delayed = void
+    resp    = void
     try
       resp = require.apply this, arguments
     catch
       delayed = e
     finally
-      module.paths.shift!
+      if module.paths[0] == @modules!
+        module.paths.shift!
       if delayed?
         throw delayed
       resp
   save: (destination, data, encoding, callback) ->
     @sane!
-    out = require.resolve @global.output, destination
+    out = require.resolve @engine.output, destination
     mkdirp out, (e) ->
       callback e if e?
       fs.write-file out, data, encoding, callback
   save-sync: (destination, data, encoding) ->
     @sane!
-    out = require.resolve @global.output, destination
+    out = require.resolve @engine.output, destination
     mkdirp.sync out
     fs.write-file-sync out, data, encoding
   exists: (destination, callback) ->
     @sane!
-    out = require.resolve @global.output, destination
+    out = require.resolve @engine.output, destination
     fs.exists out, callback
   exists-sync: (destination) ->
     @sane!
-    out = require.resolve @global.output, destination
+    out = require.resolve @engine.output, destination
     fs.exists-sync out
   install: (@module-dir, options, callback) ->
     @sane!
