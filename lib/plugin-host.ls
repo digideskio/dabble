@@ -24,6 +24,7 @@ class PluginHost
       @queue      = async.queue (task, callback) ~>
         @process task, callback
       @queue.concurrent = 1
+      @nargs      = {}
     catch
       @manifest = void
       throw e
@@ -32,6 +33,42 @@ class PluginHost
   match: (url) ->
     @sane!
     url.match @origin
+  # format [switch, switch, switch..., type, help]
+  args: ->
+    flags = ^^@flags
+    args = {}
+    while flags.length
+      flag = flags.shift!
+      flag.pop! # last index is always the help string
+
+      type = flag.pop!to-lower-case!
+      f = flag
+      value = void
+      for i of f
+        l = f[i]
+        while l[0] == '-'
+          l = l.substr(1)
+          value = @nargs[l] if @nargs[l]?
+        f[i] = l
+
+      if value?
+        value = switch type
+          case \number
+            parse-int v
+          case \flag
+            if ['yes', 'true', 'on', '1', 'one'].index-of(value.to-lower-case!) > -1
+              true
+            else
+              false
+          default
+            value
+        z = f[f.length - 1].split /\-/
+        for x of z
+          if x > 0
+            z[x] = z[x].substr(0, 1).to-upper-case! + z[x].substr(1)
+        z .= join ''
+        args[z] = value
+    args
   load: (@module-dir) ->
     @sane!
     require @entry @this

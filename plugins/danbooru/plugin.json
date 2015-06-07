@@ -4,8 +4,8 @@
   "version":     "0.0.0",
   "origin":      "danbooru.donmai.us",
   "flags":       [
-    ["--username", "-u", "string"],
-    ["--password", "-p", "string"]
+    ["-u", "--username", "string", "username to login with"],
+    ["-p", "--password", "string", "password to login with"]
   ],
   "entry"  : "danbooru.ls",
   "deps"   : {
