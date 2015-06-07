@@ -50,6 +50,9 @@ nomnom
     ..option 'overwrite', do
       abbr: 'F'
       help: 'overwrite over existing files'
+    ..option 'downloads', do
+      abbr: 'd'
+      help: 'max number of concurrent downlods'
     ..help 'download files of given URL'
     ..callback !->
       args = Array::slice.call arguments

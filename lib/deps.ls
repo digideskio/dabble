@@ -24,7 +24,7 @@ exports = module.exports = (plugin-manifest, plugin-modules, options, callback) 
   plugin-log = if options.output-log?
     options.output-log
   else
-    path.join plugin-modules, "#{plugin-manifest.name}-#{plugin-manifest.version}-#{Date.now}.log"
+    path.join plugin-modules, "/.logs/#{plugin-manifest.name}-#{plugin-manifest.version}-install.log"
 
   unless options.output-log == false
     log-stream = fs.create-write-stream plugin-log
@@ -32,8 +32,10 @@ exports = module.exports = (plugin-manifest, plugin-modules, options, callback) 
     log-stream = NULLSTREAM
 
   npm.load do
-    loglevel: "silent"
+    loglevel: "warn"
     logstream: log-stream
     , (err, npm) ->
       if dependencies.length > 0
-        npm.commands.install plugin-deps, dependencies, callback
+        console.log "Installing modules for #{plugin-manifest.name}..."
+        npm.commands.install plugin-deps, dependencies, ->
+          npm.commands.dedup callback

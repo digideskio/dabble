@@ -1,8 +1,4 @@
-fs     = require \fs
-path   = require \path
-mkdirp = require \mkdirp
-deps   = require "./deps"
-engine = require "./dabble"
+require! <[ fs path mkdirp request async ./deps ./dabble ]>
 
 class PluginHost
   VERSION: @VERSION = \1
@@ -25,6 +21,9 @@ class PluginHost
       @flags      = @manifest.flags || []
       @deps       = @manifest.deps
       @module-dir = void
+      @queue      = async.queue (task, callback) ~>
+        @process task, callback
+      @queue.concurrent = 1
     catch
       @manifest = void
       throw e
@@ -37,6 +36,7 @@ class PluginHost
     @sane!
     require @entry @this
   modules: ->
+    @sane!
     path.resolve @module-dir, "#{@name}-#{@version}"
   require: (...) ->
     @sane!
@@ -64,6 +64,46 @@ class PluginHost
     out = require.resolve @engine.output, destination
     mkdirp.sync out
     fs.write-file-sync out, data, encoding
+  process: (task, callback) !->
+    @sane!
+    switch task.type
+      case \download
+        @download task.options, task.path, callback
+      case \border
+        callback!
+  download: (options, stream, callback) ->
+    @sane!
+    request(options).pipe(stream)
+    stream.on \close, callback
+    stream.on \end, callback
+  download-file: (options, destination, callback) ->
+    @sane!
+    destination = require.resolve @engine.output, destination
+    console.log "Downloading #{options.url || options} to #{path}..."
+    @download options, fs.create-write-stream(path), callback
+  downlaod-buffer: (options, callback) ->
+    @sane!
+    console.log "Loading #{options.url || options}..."
+    options.encoding = null
+    request options, (e, im, r) ->
+      callback e, r
+  stage: (options, destination) ->
+    @sane!
+    destination = require.resolve @engine.output, destination
+    @queue.resume! if @queue.paused
+    @queue.push {type: \download, options: options, path: destination}, ->
+  border: (callback) ->
+    @sane!
+    @queue.resume! if @queue.paused
+    @queue.push {type: \border}, ->
+      @queue.pause!
+      callback
+  pause: ->
+    @sane!
+    @queue.pause!
+  resume: ->
+    @sane!
+    @queue.resume!
   exists: (destination, callback) ->
     @sane!
     out = require.resolve @engine.output, destination
