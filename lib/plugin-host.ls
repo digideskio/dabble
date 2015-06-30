@@ -1,5 +1,8 @@
 require! <[ fs path mkdirp request async ./deps ./dabble ]>
 
+CURSOR_UP  = '\x1b[1A'
+ERASE_LINE = '\x1b[2K'
+
 class PluginHost
   VERSION: @VERSION = \1
   (folder, @engine) ->
@@ -68,6 +71,7 @@ class PluginHost
             z[x] = z[x].substr(0, 1).to-upper-case! + z[x].substr(1)
         z .= join ''
         args[z] = value
+    @args = args
     args
   load: (@module-dir) ->
     @sane!
@@ -116,14 +120,86 @@ class PluginHost
   download-file: (options, destination, callback) ->
     @sane!
     destination = require.resolve @engine.output, destination
-    console.log "Downloading #{options.url || options} to #{path}..."
-    @download options, fs.create-write-stream(path), callback
-  downlaod-buffer: (options, callback) ->
+    @log options.url || options, path
+    @download options, fs.create-write-stream(path), ~>
+      @progress!
+      callback ...
+  download-buffer: (options, callback) ->
     @sane!
-    console.log "Loading #{options.url || options}..."
+    @log void, void, "Loading #{options.url || options}..."
     options.encoding = null
     request options, (e, im, r) ->
       callback e, r
+  print: (text) ->
+    if @prog?
+      if @prog.total > @prog.current
+        process.stdout.write '\r'
+        process.stdout.write ERASE_LINE + CURSOR_UP + ERASE_LINE
+        process.stdout.write "#{text}\n\n"
+        @print-progress!
+        return
+      process.stdout.write '\n'
+    process.stdout.write "#{text}\n"
+  progress: ->
+    @prog ||= do
+      total:   1
+      current: 0
+      active:  false
+
+    @prog.current++
+
+    @print-progress!
+  clear-progress: ->
+    process.stdout.write '\n'
+    @prog = void
+  print-progress: (header) ->
+    if @prog.active
+      process.stdout.write '\r'
+      process.stdout.write ERASE_LINE + CURSOR_UP + ERASE_LINE
+    @prog.active = true
+
+    tail  = "](#{@prog.current}/#{@prog.total})"
+    width = process.stdout.get-window-size![0] - tail.length - 1
+    if @prog.current > @prog.total
+      @prog.current = @prog.total
+
+    each = Math.floor width / @prog.total
+    if each == 0
+      @prog.total   -= @prog.current
+      @prog.current  = 0
+      @prog.active   = false
+      return @print-progress!
+
+    pos = 0
+    for i from 0 til @prog.current
+      pos += each
+
+    pos = Math.floor pos
+
+    unless header?
+      header = @prog.last || 'Teapot'
+    @prog.last = header
+
+    process.stdout.write "\r#{header}\n["
+
+    for i from 0 til pos
+      process.stdout.write '='
+    for i from pos til width
+      process.stdout.write ' '
+
+    process.stdout.write tail
+  log: (url, destination, print) ->
+    if print?
+      return @print print
+
+    @prog ||= do
+      total:   0
+      current: 0
+      active:  false
+
+    @prog.total++
+
+    @print-progress url
   stage: (options, destination) ->
     @sane!
     destination = require.resolve @engine.output, destination
