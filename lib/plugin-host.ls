@@ -1,7 +1,7 @@
 require! <[ fs path mkdirp request async ./deps ./dabble ]>
 
-CURSOR_UP  = '\x1b[1A'
-ERASE_LINE = '\x1b[2K'
+const CURSOR_UP  = '\x1b[1A',
+      ERASE_LINE = '\x1b[2K'
 
 class PluginHost
   VERSION: @VERSION = \1
