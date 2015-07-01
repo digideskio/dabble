@@ -9,6 +9,8 @@ class dabble
       try
         plugin = new plugin-host path.join(@plugin-dir, p.shift!), this
         @plugins[plugin.name] = plugin
+      catch
+        console.log e
     p = void
 
 exports = module.exports = dabble

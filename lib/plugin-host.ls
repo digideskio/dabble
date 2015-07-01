@@ -24,10 +24,15 @@ class PluginHost
       @flags      = @manifest.flags || []
       @deps       = @manifest.deps
       @module-dir = void
+      @nargs      = {}
+      @dry        = false
       @queue      = async.queue (task, callback) ~>
         @process task, callback
       @queue.concurrent = 1
-      @nargs      = {}
+
+      Object.define-property this, 'args', do
+        get: ~>
+          return @get-args!
     catch
       @manifest = void
       throw e
@@ -37,7 +42,7 @@ class PluginHost
     @sane!
     url.match @origin
   # format [switch, switch, switch..., type, help]
-  args: ->
+  get-args: ->
     flags = ^^@flags
     args = {}
     while flags.length
@@ -75,7 +80,7 @@ class PluginHost
     args
   load: (@module-dir) ->
     @sane!
-    require @entry @this
+    require(@entry) @
   modules: ->
     @sane!
     path.resolve @module-dir, "#{@name}-#{@version}"
@@ -202,7 +207,7 @@ class PluginHost
     @print-progress url
   stage: (options, destination) ->
     @sane!
-    destination = require.resolve @engine.output, destination
+    destination = path.resolve @engine.output, destination
     @queue.resume! if @queue.paused
     @queue.push {type: \download, options: options, path: destination}, ->
   border: (callback) ->
