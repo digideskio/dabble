@@ -1,6 +1,6 @@
 require! <[ path fs ./plugin-host ]>
 class dabble
-  (@output = path.resolve __dirname, "out") ->
+  (@output = path.resolve __dirname, "../out") ->
     @plugins = {}
     @plugin-dir = path.resolve __dirname, "..", "plugins"
 

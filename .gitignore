@@ -2,3 +2,5 @@ node_modules
 plugin_modules
 npm-debug.log
 .DS_Store
+secrets.json
+out

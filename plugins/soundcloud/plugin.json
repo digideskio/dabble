@@ -1,0 +1,14 @@
+{
+  "name":        "soundcloud",
+  "description": "soundcloud downloader",
+  "version":     "0.0.0",
+  "origin":      "soundcloud.com",
+  "flags":       [],
+  "entry":       "soundcloud.ls",
+  "flags":       [
+    ["-c", "--client-id", "string", "A (secret) soundcloud application id"]
+  ],
+  "deps": {
+    "request": "^2.55.0"
+  }
+}

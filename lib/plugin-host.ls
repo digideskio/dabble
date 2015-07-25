@@ -25,7 +25,6 @@ class PluginHost
       @deps       = @manifest.deps
       @module-dir = void
       @nargs      = {}
-      @dry        = false
       @queue      = async.queue (task, callback) ~>
         @process task, callback
       @queue.concurrent = 1
@@ -42,6 +41,8 @@ class PluginHost
     @sane!
     url.match @origin
   # format [switch, switch, switch..., type, help]
+  get-urls: ->
+    @nargs.urls || []
   get-args: ->
     flags = ^^@flags
     args = {}
@@ -101,32 +102,51 @@ class PluginHost
       resp
   save: (destination, data, encoding, callback) ->
     @sane!
-    out = require.resolve @engine.output, destination
-    mkdirp out, (e) ->
+    return callback void, void if @nargs.dry
+    exists = @exists-sync destination
+    return callback void, void if exists and not @nargs.force
+    out = path.resolve @engine.output, destination
+    @mkdirp path.resolve(out, '../'), (e) ->
       callback e if e?
       fs.write-file out, data, encoding, callback
   save-sync: (destination, data, encoding) ->
     @sane!
-    out = require.resolve @engine.output, destination
-    mkdirp.sync out
+    return if @nargs.dry
+    return if @exists-sync destination and not @nargs.force
+    out = path.resolve @engine.output, destination
+    @mkdirp-sync path.resolve out, '../'
     fs.write-file-sync out, data, encoding
   process: (task, callback) !->
     @sane!
     switch task.type
       case \download
-        @download task.options, task.path, callback
+        @download-file task.options, task.path, callback, true
       case \border
         callback!
   download: (options, stream, callback) ->
     @sane!
+    if @nargs.dry or not stream?
+      stream.close! if stream?
+      return callback void, void
+
     request(options).pipe(stream)
     stream.on \close, callback
-    stream.on \end, callback
-  download-file: (options, destination, callback) ->
+  download-file: (options, destination, callback, staged = false) ->
     @sane!
-    destination = require.resolve @engine.output, destination
-    @log options.url || options, path
-    @download options, fs.create-write-stream(path), ~>
+    exists = @exists-sync destination
+    if exists and not @nargs.force
+      @log options.url || options, destination unless staged
+      @progress!
+      return callback void, void
+    destination = path.resolve @engine.output, destination
+    @mkdirp-sync path.resolve destination, '../'
+    @log options.url || options, destination unless staged
+    stream = if @nargs.dry
+      void
+    else
+      fs.create-write-stream(destination)
+
+    @download options, stream, ~>
       @progress!
       callback ...
   download-buffer: (options, callback) ->
@@ -134,8 +154,11 @@ class PluginHost
     @log void, void, "Loading #{options.url || options}..."
     options.encoding = null
     request options, (e, im, r) ->
-      callback e, r
+      callback e, r, im
   print: (text) ->
+    window-size = process.stdout.get-window-size![0]
+    if text.length > window-size
+      text = text.substr(0, window-size - 3) + '...'
     if @prog?
       if @prog.total > @prog.current
         process.stdout.write '\r'
@@ -163,8 +186,9 @@ class PluginHost
       process.stdout.write ERASE_LINE + CURSOR_UP + ERASE_LINE
     @prog.active = true
 
-    tail  = "](#{@prog.current}/#{@prog.total})"
-    width = process.stdout.get-window-size![0] - tail.length - 1
+    tail        = "](#{@prog.current}/#{@prog.total})"
+    window-size = process.stdout.get-window-size![0]
+    width       = window-size - tail.length - 1
     if @prog.current > @prog.total
       @prog.current = @prog.total
 
@@ -182,7 +206,11 @@ class PluginHost
     pos = Math.floor pos
 
     unless header?
-      header = @prog.last || 'Teapot'
+      header = @prog.last || ''
+
+    if header.length > window-size
+      header = header.substr(0, window-size - 3)
+
     @prog.last = header
 
     process.stdout.write "\r#{header}\n["
@@ -205,17 +233,17 @@ class PluginHost
     @prog.total++
 
     @print-progress url
+
+    @prog.active = true
   stage: (options, destination) ->
     @sane!
-    destination = path.resolve @engine.output, destination
     @queue.resume! if @queue.paused
+    @log options.url, destination
     @queue.push {type: \download, options: options, path: destination}, ->
   border: (callback) ->
     @sane!
     @queue.resume! if @queue.paused
-    @queue.push {type: \border}, ->
-      @queue.pause!
-      callback
+    @queue.push {type: \border}, callback
   pause: ->
     @sane!
     @queue.pause!
@@ -224,14 +252,20 @@ class PluginHost
     @queue.resume!
   exists: (destination, callback) ->
     @sane!
-    out = require.resolve @engine.output, destination
+    out = path.resolve @engine.output, destination
     fs.exists out, callback
   exists-sync: (destination) ->
     @sane!
-    out = require.resolve @engine.output, destination
+    out = path.resolve @engine.output, destination
     fs.exists-sync out
   install: (@module-dir, options, callback) ->
     @sane!
     deps @manifest, @module-dir, options, callback
+  mkdirp: (destination, callback) ->
+    return callback void, void if @nargs.dry
+    mkdirp destination, callback
+  mkdirp-sync: (destination) ->
+    return void if @nargs.dry
+    mkdirp.sync destination
 
 exports = module.exports = PluginHost
